@@ -51,6 +51,8 @@ void cronometro_1();
 // timer
 void timer_1(int tempo_timer);
 
+// exibe registrador de sinais - REG_SINAIS - depuração
+void view_REG_SINAIS();
 
 
 //---- Definicao dos sinais (msg) e estados utilizados nos blocos
@@ -102,6 +104,9 @@ char estado_TIMER1 = 1;
 char msg_T1_start = 0;
 char msg_T1_done = 0;
 
+// REGISTRADOR com os sinais dos processos - 8 bits 
+
+uint8_t REG_SINAIS = 0;       //registro de 8 bits, inteiro sem sinal, 0 a 255
 
 
 void setup() {
@@ -389,4 +394,20 @@ void timer_1(int tempo_timer){
    estado_TIMER1 = 1;          //vai para o estado 1
    break;
   }
-}
+} //fim do bloco
+
+void view_REG_SINAIS(){
+  // Funcao para visualização do registrador com os sinais para depuração
+   
+  byte mbyte = REG_SINAIS;
+  
+
+  Serial.print("REG_SINAIS: ");
+
+  for (int i = 0; i < 8; i++)  { 
+    bool b = mbyte & B10000000;  //mascara os bits 0 a 6, somente o bit 7 será avaliado
+    Serial.print(b); 
+    mbyte = mbyte << 1;
+  }
+  Serial.println();
+}//fim

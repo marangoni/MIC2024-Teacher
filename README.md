@@ -10,3 +10,4 @@ Update README.md
   - Atualmente os sinais (msg) são definidos como char (1 byte), das quais somente um bit é utilizado. Para melhoria
   - da utilizaçao da memoria, deve ser definido um registro de 16 bits para definicao dos sinais utilizados no programa
   - cada um em 1 bit.
+
