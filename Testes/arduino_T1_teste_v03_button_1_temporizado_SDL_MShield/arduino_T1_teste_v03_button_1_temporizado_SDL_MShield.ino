@@ -3,7 +3,9 @@
    
    Botao temporizado - conforme o tempo determina a ação - Acionamento rápido função 1, acionamento lento função 2
 
-   Utilizada o shield multi-function - arduino - 
+   Utilizada o shield multi-function - arduino -
+
+   Atualização da função led 
 
    Compilador: Arduino IDE 2.2.1
 
@@ -41,13 +43,12 @@ void led_1();
 void led_2();
 void timer_1(int tempo_timer);
 void cronometro_1();
-//void testes();
 
 // ============================================================
 // --- Variáveis Globais ---
 
-volatile int CRON1_time = 0;      //armazena tempo em que o botao ficou pressionado
-volatile int TIMER1_count = 0;    //armazena tempo decorrido de timer1
+int CRON1_time = 0;      //armazena tempo em que o botao ficou pressionado
+int TIMER1_count = 0;    //armazena tempo decorrido de timer1
 
 char compareMatchReg; //Armazena valor utilizado no registro TCNT2 para definição da temporização de T2
 
@@ -55,8 +56,8 @@ char compareMatchReg; //Armazena valor utilizado no registro TCNT2 para definiç
 
 char estado_CONTROL = 1;
 char estado_BOTAO1 = 1;
-char estado_LED1 = 1;
-char estado_LED2 = 1;
+char estado_LED_1 = 1;
+char estado_LED_2 = 1;
 char estado_CRON1 = 1;
 char estado_TIMER1 = 1;
 
@@ -66,10 +67,10 @@ char estado_TIMER1 = 1;
 char msg_BOTAO_1_on = 0;
 char msg_BOTAO_1_off = 0;
 
-char msg_LED1_cmd = 0;
+char msg_LED1_off = 0;
 char msg_LED1_on = 0;
 
-char msg_LED2_cmd = 0;
+char msg_LED2_off = 0;
 char msg_LED2_on = 0;
 
 char msg_CRON1_start = 0;
@@ -177,20 +178,22 @@ switch (estado_CONTROL) {
       msg_CRON1_start = 1;         //Envia sinal para inicio do cronometro 1
       estado_CONTROL = 2;          //Vai para o estado 2
     }
-    break;
+  break;
+  
   case 2:
     // Estado 2 - Aguarda sinal de liberação do botao
-  if(msg_BOTAO_1_off == 1){
-    msg_BOTAO_1_off = 0;	      //Consome o sinal
-    
-    msg_CRON1_stop = 1;         //Envia sinal para pararo cronometro 1   
-    
-    estado_CONTROL = 3;
-  }
-    break;
+    if(msg_BOTAO_1_off == 1){
+      msg_BOTAO_1_off = 0;	      //Consome o sinal
+      
+      msg_CRON1_stop = 1;         //Envia sinal para parar o cronometro 1   
+      
+      estado_CONTROL = 3;
+    }
+  break;
 
   case 3:
-    // Estado 3 - Aguarda sinal de termino da temporização do botao
+    // Estado 3 - Aguarda sinal de termino da cronometragem 1
+
   if(msg_CRON1_done == 1){
     msg_CRON1_done = 0;	         //Consome o sinal
     
@@ -203,38 +206,47 @@ switch (estado_CONTROL) {
       estado_CONTROL = 5;
     } 
   }
-    break;
+  break;
+  
   case 4:
-    msg_LED1_cmd = 1;           //Envia sinal para comandar o led
+    // Envia sinal para comandar led1
+
+    msg_LED1_on = 1;            //Envia sinal para comandar o led
     msg_T1_start = 1;           //Envia sinal para iniciar timer 1
     estado_CONTROL = 6;         //Vai para o estado 6
   break;
 
   case 5:
-    msg_LED2_cmd = 1;           //Envia sinal para comandar o led
+    // Envia sinal para comandar led2
+
+    msg_LED2_on = 1;           //Envia sinal para comandar o led
     msg_T1_start = 1;           //Envia sinal para iniciar timer 1
-    estado_CONTROL = 6;         //Vai para o estado 6
+    estado_CONTROL = 7;         //Vai para o estado 6
   break;
 
   case 6:
-    // verifica se recebeu sinal para termino da temporização de t1
-    //Verifica status dos leds
-
-    
+    // verifica se recebeu sinal da temporização do Timer 1 - se sim, apaga led1
 
     if(msg_T1_done == 1){
       msg_T1_done = 0;          //Consome sinal
-      
-      msg_LED1_cmd = 1;         //Envia sinal para apagar o led 1
-      
-     
-      msg_LED2_cmd = 1;         //Envia sinal para apagar o led 2
-      
+  
+      msg_LED1_off = 1;         //Envia sinal para apagar o led 1
       estado_CONTROL = 1;       //Volta para o estado 1
     }
-   break;
+  break;
+
+  case 7: 
+       // verifica se recebeu sinal da temporização do Timer 1 - se sim, apaga led2
+
+       if(msg_T1_done == 1){
+          msg_T1_done = 0;          //Consome sinal
+
+          msg_LED2_off = 1;         //Envia sinal para apagar o led 2
+          estado_CONTROL = 1;       //Volta para o estado 1
+      }
+  break;  
   }
-}  
+} //Termino da funcao 
  
 void botao_1(){
   //função que verifica acionamento do botão
@@ -260,63 +272,59 @@ void botao_1(){
 }
 
 void led_1(){
-// Funcao de controle do led
+   //funcao que comando o led 1
+   // ** Importante ** - Shield multifunção acende o led com sinal 0V (nivel logico 0) e apaga com 5V (nivel logico 1
 
-    
-    
+   switch(estado_LED_1){
 
-  switch (estado_LED1) {
-  case 1:
-    // Estado 1 - aguarda sinal para inversão do led
-    //f_LED1_status = PINB & led1;
-    if (msg_LED1_cmd == 1){
-     msg_LED1_cmd = 0;             //Consome o sinal para novo acionamento
-     PORTB &= ~led1;                //Acende led
-     msg_LED1_on = 1;               //Envia sinal led aceso
-     estado_LED1=2;                //vai para estado 2
+   case 1: //Aguarda um comando para ligar
+    
+    if (msg_LED1_on == 1){
+       msg_LED1_on = 0;     //consome o sinal
+       PORTB &= ~led1;      //acende o led
+       estado_LED_1 = 2;     //vai para o estado 2
     }
-    break;
-  case 2:
-    // Estado 2 - aguarda sinal para apagar o led
-    //f_LED1_status = PINB & led1;
-    if (msg_LED1_cmd == 1){
-      msg_LED1_cmd = 0;     //Consome o sinal para novo acionamento
-      PORTB |= led1;       //Apaga o led
-      msg_LED1_on = 0;      //Sinal led não está aceso
-      estado_LED1=1;        //vai para o estado 1 
+
+   break;
+
+   case 2: //aguarda comando para desligar
+      
+     if (msg_LED1_off == 1){
+       msg_LED1_off = 0;    //consome o sinal
+       PORTB |= led1;       //apaga o led
+       estado_LED_1 = 1;     //vai para o estado 2
     }
    break;
-  }
-}
+   }
+} //fim do bloco
+
 
 void led_2(){
-// Funcao de controle do led
-  
-  
+   //funcao que comando o led 2
+   // ** Importante ** - Shield multifunção acende o led com sinal 0V (nivel logico 0) e apaga com 5V (nivel logico 1
 
-  switch (estado_LED2) {
-  case 1:
-    // Estado 1 - aguarda sinal para inversão do led
-    //f_LED2_status = PINB & led2;
-    if (msg_LED2_cmd == 1){
-     msg_LED2_cmd = 0;             //Consome o sinal para novo acionamento
-     PORTB &= ~led2;                //Acende led
-     msg_LED2_on = 1;               //Envia sinal led aceso
-     estado_LED2=2;                //vai para estado 2
+   switch(estado_LED_2){
+
+   case 1: //Aguarda um comando para ligar
+    
+    if (msg_LED2_on == 1){
+       msg_LED2_on = 0;     //consome o sinal
+       PORTB &= ~led2;      //acende o led
+       estado_LED_2 = 2;     //vai para o estado 2
     }
-    break;
-  case 2:
-    // Estado 2 - aguarda sinal para apagar o led
-    //f_LED2_status = PINB & led2;
-    if (msg_LED2_cmd == 1){
-      msg_LED2_cmd = 0;     //Consome o sinal para novo acionamento
-      PORTB |= led2;       //Apaga o led
-      msg_LED2_on = 0;      //Sinal led não está aceso
-      estado_LED2=1;        //vai para o estado 1 
+
+   break;
+
+   case 2: //aguarda comando para desligar
+      
+     if (msg_LED2_off == 1){
+       msg_LED2_off = 0;    //consome o sinal
+       PORTB |= led2;       //apaga o led
+       estado_LED_2 = 1;     //vai para o estado 2
     }
    break;
-  }
-}
+   }
+} //fim do bloco
 
 
 void cronometro_1(){
@@ -360,7 +368,6 @@ void timer_1(int tempo_timer){
     if (msg_T1_start == 1){
      msg_T1_start = 0;       //Consome o sinal
      estado_TIMER1 = 2;         // vai para estado 2
-
     }
     break;
   case 2:
@@ -377,28 +384,6 @@ void timer_1(int tempo_timer){
    break;
   }
 }
-
-/*
-void testes(){
-      // Função de testes
-      Serial.print("Estado controle: ");
-      Serial.println(int(estado_CONTROL));
-      //Serial.print("Estado botao: ");   
-      //Serial.println(int(estado_BOTAO1));
-      //Serial.print("Estado LED1: ");   
-      //Serial.println(int(estado_LED1));
-      //Serial.print("Estado LED2: ");   
-      //Serial.println(int(estado_LED2));
-      //Serial.print("Estado Cronometro: ");   
-      //Serial.println(int(estado_CRON1));
-      Serial.print("Valor cronometro: ");
-      Serial.println(CRON1_time);
-      //Serial.print("Estado Timer1: ");   
-      //Serial.println(int(estado_TIMER1)); 
-      //delay(1000);
-}
-*/
-
 // ============================================================
 // --- FINAL DO PROGRAMA ---
 
